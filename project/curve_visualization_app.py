@@ -7,14 +7,14 @@ from scipy.interpolate import make_interp_spline
 from scipy.optimize import curve_fit
 import io
 
-# Page configuration
+
 st.set_page_config(
     page_title="Interactive Curve Visualization",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+
 st.markdown("""
     <style>
     .main-header {
@@ -36,16 +36,16 @@ st.markdown("""
 st.markdown('<p class="main-header">📊 Interactive Curve Visualization System</p>', unsafe_allow_html=True)
 st.write("**Dynamic curve generation and analysis based on your dataset and parameters**")
 
-# Sidebar for settings
+
 with st.sidebar:
     st.header("⚙️ Settings")
     
-    # Upload dataset
+   
     uploaded_file = st.file_uploader("📁 Upload CSV File", type=["csv"])
     
     st.markdown("---")
     
-    # Advanced options
+   
     st.subheader("Advanced Options")
     show_equation = st.checkbox("Show Equation", value=True)
     show_residuals = st.checkbox("Show Residuals Plot", value=False)
@@ -53,7 +53,7 @@ with st.sidebar:
     point_size = st.slider("Point Size", 3, 15, 8)
     line_width = st.slider("Line Width", 1, 5, 2)
 
-# Load or generate dataset
+
 if uploaded_file:
     try:
         df = pd.read_csv(uploaded_file)
@@ -62,7 +62,7 @@ if uploaded_file:
         st.error(f"Error loading file: {e}")
         df = None
 else:
-    # Generate sample data
+    
     np.random.seed(42)
     x_sample = np.linspace(0, 10, 20)
     y_sample = 2*x_sample + 5 + np.random.randn(20) * 2
@@ -70,7 +70,7 @@ else:
     st.info("ℹ️ Using sample dataset. Upload your own CSV to analyze custom data.")
 
 if df is not None:
-    # Dataset preview
+    
     with st.expander("📋 Dataset Preview", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
@@ -79,19 +79,19 @@ if df is not None:
             st.write("**Dataset Statistics:**")
             st.dataframe(df.describe(), use_container_width=True)
     
-    # Column selection
+    
     col1, col2 = st.columns(2)
     with col1:
         x_col = st.selectbox("📈 Select X Column", df.columns, index=0)
     with col2:
         y_col = st.selectbox("📊 Select Y Column", df.columns, index=min(1, len(df.columns)-1))
     
-    # Extract and validate data
+    
     try:
         x = df[x_col].dropna().values
         y = df[y_col].dropna().values
         
-        # Ensure x and y have same length
+        
         min_len = min(len(x), len(y))
         x = x[:min_len]
         y = y[:min_len]
@@ -100,7 +100,7 @@ if df is not None:
             st.error("❌ Need at least 3 data points for curve fitting.")
             st.stop()
         
-        # Sort by x for better visualization
+        
         sort_idx = np.argsort(x)
         x = x[sort_idx]
         y = y[sort_idx]
@@ -109,7 +109,7 @@ if df is not None:
         st.error(f"Error processing data: {e}")
         st.stop()
     
-    # Curve type selection
+   
     st.markdown("---")
     col1, col2 = st.columns(2)
     
@@ -122,7 +122,7 @@ if df is not None:
     with col2:
         view_mode = st.radio("👁️ View Mode", ["2D", "3D"], horizontal=True)
     
-    # Curve-specific parameters
+    
     degree = 2
     smooth_points = 300
     
@@ -131,7 +131,7 @@ if df is not None:
     elif curve_type == "Spline":
         smooth_points = st.slider("Smoothness (points)", 100, 1000, 300)
     
-    # Curve calculation
+    
     equation_text = ""
     y_fit = None
     x_fit = x.copy()
@@ -149,7 +149,7 @@ if df is not None:
             model = np.poly1d(coeff)
             y_fit = model(x)
             
-            # Build equation string
+            
             terms = []
             for i, c in enumerate(coeff):
                 power = degree - i
@@ -162,7 +162,7 @@ if df is not None:
             equation_text = "y = " + " + ".join(terms)
             
         elif curve_type == "Exponential":
-            # Handle negative or zero values
+            
             y_pos = np.where(y <= 0, 0.001, y)
             coeff = np.polyfit(x, np.log(y_pos), 1)
             a = np.exp(coeff[1])
@@ -171,7 +171,7 @@ if df is not None:
             equation_text = f"y = {a:.4f} * e^({b:.4f}x)"
             
         elif curve_type == "Logarithmic":
-            # Handle negative or zero x values
+            
             x_pos = np.where(x <= 0, 0.001, x)
             coeff = np.polyfit(np.log(x_pos), y, 1)
             a, b = coeff[0], coeff[1]
@@ -179,7 +179,7 @@ if df is not None:
             equation_text = f"y = {a:.4f} * ln(x) + {b:.4f}"
             
         elif curve_type == "Power":
-            # Handle negative or zero values
+            
             x_pos = np.where(x <= 0, 0.001, x)
             y_pos = np.where(y <= 0, 0.001, y)
             coeff = np.polyfit(np.log(x_pos), np.log(y_pos), 1)
@@ -194,10 +194,10 @@ if df is not None:
             y_fit = spline(x_fit)
             equation_text = "Cubic Spline Interpolation"
         
-        # Calculate R-squared
+        
         if y_fit is not None:
             if curve_type == "Spline":
-                # For spline, evaluate at original x points
+                
                 spline = make_interp_spline(x, y, k=min(3, len(x)-1))
                 y_pred = spline(x)
             else:
@@ -211,7 +211,7 @@ if df is not None:
         st.error(f"Error fitting curve: {e}")
         st.stop()
     
-    # Display metrics
+    
     if show_metrics and y_fit is not None:
         st.markdown("---")
         col1, col2, col3, col4 = st.columns(4)
@@ -230,14 +230,14 @@ if df is not None:
     if show_equation and equation_text:
         st.info(f"**Equation:** {equation_text}")
     
-    # Visualization
+    
     st.markdown("---")
     st.subheader("📈 Visualization")
     
     if view_mode == "2D":
         fig = go.Figure()
         
-        # Add scatter points
+        
         fig.add_trace(go.Scatter(
             x=x, y=y,
             mode='markers',
@@ -246,7 +246,7 @@ if df is not None:
             hovertemplate='X: %{x:.4f}<br>Y: %{y:.4f}<extra></extra>'
         ))
         
-        # Add fitted curve
+        
         if y_fit is not None:
             fig.add_trace(go.Scatter(
                 x=x_fit, y=y_fit,
@@ -267,13 +267,13 @@ if df is not None:
         
         st.plotly_chart(fig, use_container_width=True)
         
-    else:  # 3D mode
+    else:  
         z = np.zeros_like(x)
         z_fit = np.zeros_like(x_fit)
         
         fig = go.Figure()
         
-        # Add scatter points
+        
         fig.add_trace(go.Scatter3d(
             x=x, y=y, z=z,
             mode='markers',
@@ -281,7 +281,7 @@ if df is not None:
             marker=dict(size=point_size, color='#636EFA', opacity=0.7)
         ))
         
-        # Add fitted curve
+        
         if y_fit is not None:
             fig.add_trace(go.Scatter3d(
                 x=x_fit, y=y_fit, z=z_fit,
@@ -302,7 +302,7 @@ if df is not None:
         
         st.plotly_chart(fig, use_container_width=True)
     
-    # Residuals plot
+    
     if show_residuals and y_fit is not None:
         st.markdown("---")
         st.subheader("📉 Residuals Analysis")
@@ -328,12 +328,12 @@ if df is not None:
         
         st.plotly_chart(fig_res, use_container_width=True)
     
-    # Download options
+    
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        # Download graph as PNG
+        
         try:
             img_bytes = fig.to_image(format="png", width=1200, height=800)
             st.download_button(
@@ -346,7 +346,7 @@ if df is not None:
             st.warning("Install kaleido for image export: pip install kaleido")
     
     with col2:
-        # Download fitted data as CSV
+        
         if y_fit is not None:
             fitted_df = pd.DataFrame({
                 'X': x_fit,
@@ -361,7 +361,7 @@ if df is not None:
             )
     
     with col3:
-        # Download report
+        
         report = f"""Curve Fitting Report
 ========================
 Curve Type: {curve_type}
@@ -381,7 +381,7 @@ Y Column: {y_col}
     
     st.success("✨ Change dataset or parameters to update the curve in real time!")
     
-    # Footer
+    
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; padding: 1rem;'>
